@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import AnyUrl, Field
+from pydantic import AnyUrl, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,7 +44,9 @@ class Settings(BaseSettings):
 
     # File uploads
     files_dir: str = Field(default="/data/files", alias="FILES_DIR")
-    files_base_url: str = Field(default="http://campus-ball-server.kro.kr:30080/files", alias="FILES_BASE_URL")
+    files_base_url: str = Field(
+        default="http://campus-ball-server.kro.kr:30080/files", alias="FILES_BASE_URL"
+    )
 
     # Compatibility accessor
     @property
@@ -56,6 +58,20 @@ class Settings(BaseSettings):
         raise ValueError(
             "DATABASE_URL or SQLALCHEMY_DATABASE_URL must be set in environment"
         )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            s = value.strip()
+            if s in ("*", ""):
+                return ["*"]
+            return [item.strip() for item in s.split(",") if item.strip()]
+        return value
 
 
 @lru_cache(maxsize=1)
