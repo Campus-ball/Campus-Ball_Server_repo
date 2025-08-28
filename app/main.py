@@ -18,3 +18,6 @@ app.include_router(club_controller.router)
 settings = get_settings()
 os.makedirs(settings.files_dir, exist_ok=True)
 app.mount("/files", StaticFiles(directory=settings.files_dir), name="files")
+
+
+app = FastAPI(title="CampusBall API", version="1.0")

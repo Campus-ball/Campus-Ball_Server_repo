@@ -8,7 +8,10 @@ from app.models import Request, Club, Match, User, Department
 class MatchRepository:
     def get_request_by_id(self, db: Session, request_id: int) -> Optional[Request]:
         return db.query(Request).filter(Request.request_id == request_id).first()
-    def get_request_with_clubs(self, db: Session, request_id: int) -> Tuple[Optional[Request], Optional[Club], Optional[Club]]:
+
+    def get_request_with_clubs(
+        self, db: Session, request_id: int
+    ) -> Tuple[Optional[Request], Optional[Club], Optional[Club]]:
         req = db.query(Request).filter(Request.request_id == request_id).first()
         if req is None:
             return None, None, None
@@ -34,21 +37,42 @@ class MatchRepository:
     def delete_request(self, db: Session, req: Request) -> None:
         db.delete(req)
 
-    def find_user_and_club(self, db: Session, user_id: str) -> Tuple[Optional[User], Optional[Club]]:
+    def find_user_and_club(
+        self, db: Session, user_id: str
+    ) -> Tuple[Optional[User], Optional[Club]]:
         user = db.query(User).filter(User.user_id == user_id).first()
-        club = None if user is None else db.query(Club).filter(Club.club_id == user.club_id).first()
+        club = (
+            None
+            if user is None
+            else db.query(Club).filter(Club.club_id == user.club_id).first()
+        )
         return user, club
 
-    def list_received_requests(self, db: Session, club_id: int) -> List[Tuple[Request, Club, Department]]:
+    def list_received_requests(
+        self, db: Session, club_id: int
+    ) -> List[Tuple[Request, Club, Department]]:
         # Requests where this club is the receiver (club_id2)
         reqs = (
             db.query(Request, Club, Department)
             .join(Club, Club.club_id == Request.club_id)
             .join(Department, Department.department_id == Club.department_id)
             .filter(Request.club_id2 == club_id)
-            .order_by(Request.date.asc(), Request.start_time.asc(), Request.request_id.asc())
+            .order_by(
+                Request.date.asc(), Request.start_time.asc(), Request.request_id.asc()
+            )
             .all()
         )
         return reqs
 
-
+    def list_success_matches(
+        self, db: Session, club_id: int
+    ) -> List[Tuple[Match, Club, Department]]:
+        rows = (
+            db.query(Match, Club, Department)
+            .join(Club, Club.club_id == Match.club_id)
+            .join(Department, Department.department_id == Club.department_id)
+            .filter((Match.club_id == club_id) | (Match.club_id2 == club_id))
+            .order_by(Match.date.desc(), Match.start_time.desc(), Match.match_id.desc())
+            .all()
+        )
+        return rows
