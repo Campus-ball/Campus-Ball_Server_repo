@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
-from app.controllers import api_controller
+from app.controllers import api_controller, auth_controller
 from app.controllers import event_controller
 from app.controllers import match_controller
 from app.controllers import club_controller
@@ -11,6 +11,7 @@ from app.core.settings import get_settings
 app = FastAPI(title="CampusBall API", version="1.0")
 
 app.include_router(api_controller.router)
+app.include_router(auth_controller.router)
 app.include_router(event_controller.router)
 app.include_router(match_controller.router)
 app.include_router(club_controller.router)

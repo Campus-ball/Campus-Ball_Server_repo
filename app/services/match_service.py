@@ -14,6 +14,13 @@ from app.dto.match.response.matchSuccessListResponse import (
     MatchSuccessListData,
     MatchSuccessListResponse,
 )
+from app.dto.match.reqeust.matchCreateRequest import MatchCreateRequest
+from app.dto.match.response.matchCreateResponse import MatchCreateResponse
+from app.dto.match.response.matchRandomResponse import (
+    MatchRandomResponse,
+    MatchRandomData,
+)
+from app.models import Department
 
 
 class MatchService:
@@ -102,4 +109,64 @@ class MatchService:
             status=200,
             message="성사된 경기 목록을 성공적으로 가져왔습니다.",
             data=MatchSuccessListData(items=items),
+        )
+
+    def create_friendly_request(
+        self, db: Session, user_id: str, body: MatchCreateRequest
+    ) -> MatchCreateResponse:
+        self.repository.create_friendly_request(db, user_id, int(body.clubId))
+        db.commit()
+        return MatchCreateResponse(status=200, message="상대를 찾았습니다!", data=None)
+
+    def random_opponent(self, db: Session, user_id: str) -> MatchRandomResponse:
+        user, club = self.repository.find_user_and_club(db, user_id)
+        if not user or not club:
+            return MatchRandomResponse(
+                status=500, message="동아리 가져오기 실패", data=None
+            )
+        # Two-join strategy
+        by_match = self.repository.find_candidate_clubs_by_match(db, club.club_id)
+        by_avail = self.repository.find_candidate_slots_by_availability(
+            db, club.club_id
+        )
+        # Choose first club that appears in availability list
+        # 나중에 알고리즘 적용할 부분
+        candidate = None
+        slot_date = None
+        slot_time = None
+        avail_map = {}
+        for c, a in by_avail:
+            if c.club_id not in avail_map:
+                avail_map[c.club_id] = a
+        for c, _cnt in by_match:
+            a = avail_map.get(c.club_id)
+            if a is not None:
+                candidate = c
+                slot_date = a.start_date.isoformat() if a.start_date else ""
+                slot_time = a.start_time.strftime("%H:%M") if a.start_time else ""
+                break
+        if candidate is None:
+            return MatchRandomResponse(
+                status=500,
+                message="매칭된 상대를 찾지 못했습니다.",
+                data=None,
+            )
+        dept = (
+            db.query(Department)
+            .filter(Department.department_id == candidate.department_id)
+            .first()
+        )
+        dept_name = f"{dept.college.name} {dept.name}" if dept and dept.college else ""
+        return MatchRandomResponse(
+            status=200,
+            message="매칭된 상대방 정보를 성공적으로 가져왔습니다.",
+            data=MatchRandomData(
+                clubId=int(candidate.club_id),
+                clubName=candidate.name,
+                departmentName=dept_name,
+                clubLogoUrl=candidate.logo_img_url,
+                clubDescription=candidate.description,
+                startDate=slot_date or "",
+                startTime=slot_time or "",
+            ),
         )

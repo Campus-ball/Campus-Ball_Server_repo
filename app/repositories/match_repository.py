@@ -1,8 +1,9 @@
 from typing import Optional, Tuple, List
+from datetime import date, time
 
 from sqlalchemy.orm import Session
 
-from app.models import Request, Club, Match, User, Department
+from app.models import Request, Club, Match, User, Department, Availability
 
 
 class MatchRepository:
@@ -73,6 +74,59 @@ class MatchRepository:
             .join(Department, Department.department_id == Club.department_id)
             .filter((Match.club_id == club_id) | (Match.club_id2 == club_id))
             .order_by(Match.date.desc(), Match.start_time.desc(), Match.match_id.desc())
+            .all()
+        )
+        return rows
+
+    def create_friendly_request(
+        self, db: Session, from_user_id: str, target_club_id: int
+    ) -> None:
+        user = db.query(User).filter(User.user_id == from_user_id).first()
+        if user is None:
+            raise ValueError("User not found")
+        from_club = db.query(Club).filter(Club.club_id == user.club_id).first()
+        to_club = db.query(Club).filter(Club.club_id == target_club_id).first()
+        if from_club is None or to_club is None:
+            raise ValueError("Club not found")
+        req = Request(
+            date=date.today(),
+            start_time=time(0, 0),
+            end_time=time(0, 0),
+            type="친선 경기",
+            club_id=from_club.club_id,
+            owner_id=from_club.owner_id,
+            club_id2=to_club.club_id,
+            owner_id2=to_club.owner_id,
+        )
+        db.add(req)
+
+    # Club + Match join: find clubs with fewer recent matches (example heuristic)
+    def find_candidate_clubs_by_match(
+        self, db: Session, exclude_club_id: int
+    ) -> List[Tuple[Club, int]]:
+        sub = (
+            db.query(Match.club_id, db.func.count(Match.match_id).label("cnt"))
+            .group_by(Match.club_id)
+            .subquery()
+        )
+        rows = (
+            db.query(Club, db.func.coalesce(sub.c.cnt, 0))
+            .outerjoin(sub, sub.c.club_id == Club.club_id)
+            .filter(Club.club_id != exclude_club_id)
+            .order_by(sub.c.cnt.asc().nullsfirst(), Club.club_id.asc())
+            .all()
+        )
+        return rows
+
+    # Club + Availability join: find clubs that have any availability
+    def find_candidate_slots_by_availability(
+        self, db: Session, exclude_club_id: int
+    ) -> List[Tuple[Club, Availability]]:
+        rows = (
+            db.query(Club, Availability)
+            .join(Availability, Availability.club_id == Club.club_id)
+            .filter(Club.club_id != exclude_club_id)
+            .order_by(Availability.start_date.asc(), Availability.start_time.asc())
             .all()
         )
         return rows
