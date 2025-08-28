@@ -24,8 +24,8 @@ class MatchRepository:
     def create_match_from_request(self, db: Session, req: Request) -> Match:
         match = Match(
             date=req.date,
-            start_time=time(17, 0),
-            end_time=time(18, 0),
+            start_time=req.start_time,
+            end_time=req.end_time,
             type=req.type,
             club_id=req.club_id,
             owner_id=req.owner_id,
@@ -92,8 +92,8 @@ class MatchRepository:
         req = Request(
             request_id=None,
             date=date.today(),
-            start_time=time(0, 0),
-            end_time=time(0, 0),
+            start_time=time(17, 0),
+            end_time=time(18, 0),
             type="친선 경기",
             club_id=from_club.club_id,
             owner_id=from_club.owner_id,
