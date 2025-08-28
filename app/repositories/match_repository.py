@@ -90,6 +90,7 @@ class MatchRepository:
         if from_club is None or to_club is None:
             raise ValueError("Club not found")
         req = Request(
+            request_id=None,
             date=date.today(),
             start_time=time(0, 0),
             end_time=time(0, 0),
@@ -119,6 +120,7 @@ class MatchRepository:
         if from_club is None or to_club is None:
             raise ValueError("Club not found")
         req = Request(
+            request_id=None,
             date=start_date,
             start_time=start_time,
             end_time=start_time,
