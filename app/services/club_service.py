@@ -51,7 +51,7 @@ class ClubService:
         opponent_info = OpponentInfo(
             clubId=int(opponent.club_id) if opponent else 0,
             clubName=opponent.name if opponent else "",
-            departmentName=(f"{opp_dept.college.name} {opp_dept.name}" if opp_dept else ""),
+            departmentName=(f"{opp_dept.name}" if opp_dept else ""),
             clubLogoUrl=(opponent.logo_img_url if opponent else None),
             clubDescription=(opponent.description if opponent else None),
         )

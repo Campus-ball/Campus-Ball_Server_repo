@@ -25,6 +25,8 @@ from app.dto.match.response.matchRandomCreateResponse import (
     MatchRandomCreateResponse,
     MatchRandomCreateData,
 )
+from app.models.club import Club
+from app.models.department import Department
 
 
 class MatchService:
@@ -97,18 +99,20 @@ class MatchService:
                 data=MatchSuccessListData(items=[]),
             )
         rows = self.repository.list_success_matches(db, club.club_id)
+        
         items = [
             MatchSuccessListItem(
                 matchId=int(m.match_id),
                 matchType=m.type,
                 clubId=int(c.club_id),
                 clubName=c.name,
-                departmentName=f"{dept.college.name} {dept.name}",
+                departmentName=f"{dept.name}",
                 clubLogoUrl=c.logo_img_url,
                 chatUrl=c.chat_url,
             )
             for (m, c, dept) in rows
         ]
+        
         return MatchSuccessListResponse(
             status=200,
             message="성사된 경기 목록을 성공적으로 가져왔습니다.",

@@ -69,15 +69,29 @@ class MatchRepository:
     def list_success_matches(
         self, db: Session, club_id: int
     ) -> List[Tuple[Match, Club, Department]]:
+        # 내 클럽이 club_id인 경우 상대방은 club_id2
         rows = (
             db.query(Match, Club, Department)
-            .join(Club, Club.club_id == Match.club_id)
+            .join(Club, Club.club_id == Match.club_id2)  # 상대방 클럽 정보
             .join(Department, Department.department_id == Club.department_id)
-            .filter((Match.club_id == club_id) | (Match.club_id2 == club_id))
-            .order_by(Match.date.desc(), Match.start_time.desc(), Match.match_id.desc())
+            .filter(Match.club_id == club_id)
             .all()
         )
-        return rows
+        
+        # 내 클럽이 club_id2인 경우 상대방은 club_id
+        rows2 = (
+            db.query(Match, Club, Department)
+            .join(Club, Club.club_id == Match.club_id)  # 상대방 클럽 정보
+            .join(Department, Department.department_id == Club.department_id)
+            .filter(Match.club_id2 == club_id)
+            .all()
+        )
+        
+        # 두 결과를 합치고 정렬
+        all_rows = rows + rows2
+        all_rows.sort(key=lambda x: (x[0].date, x[0].start_time, x[0].match_id), reverse=True)
+        
+        return all_rows
 
     def create_friendly_request(
         self, db: Session, from_user_id: str, target_club_id: int
