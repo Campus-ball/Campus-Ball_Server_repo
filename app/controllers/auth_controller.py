@@ -31,7 +31,11 @@ def login(req: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
     return auth_service.login(db, req)
 
 
-@router.post("/token/refresh", response_model=RefreshTokenResponse)
+@router.post(
+    "/token/refresh",
+    response_model=RefreshTokenResponse,
+    dependencies=[Depends(security)],
+)
 def refresh_token(
     req: RefreshTokenRequest, db: Session = Depends(get_db)
 ) -> RefreshTokenResponse:

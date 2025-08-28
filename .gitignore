@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Environments
+.env
+.env.*
+.venv/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editors/OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+
+# Coverage
+htmlcov/
+.coverage*
+
+# Node (if present)
+node_modules/
+
+# Poetry virtualenvs cache (if any)
+.poetry/
