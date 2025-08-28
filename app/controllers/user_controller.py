@@ -9,8 +9,8 @@ from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 
 
-router = APIRouter(prefix="/user", tags=["user"])
 security = HTTPBearer(auto_error=True)
+router = APIRouter(prefix="/user", tags=["user"], dependencies=[Depends(security)])
 
 
 @router.get("/me", response_model=UserMeResponse)
