@@ -19,8 +19,8 @@ def list_events(
     settings = get_settings()
     if not authorization or not authorization.lower().startswith("bearer "):
         return EventListResponse(
-            status=200,
-            message="캘린더 이벤트를 성공적으로 가져왔습니다.",
+            status=401,
+            message="인증 실패",
             data={"items": []},
         )
     token = authorization.split(" ", 1)[1]

@@ -15,11 +15,27 @@ security = HTTPBearer(auto_error=True)
 
 @router.get("/me", response_model=UserMeResponse)
 def get_me(
-    cred: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db), authorization: str = Depends(lambda: ""),
 ) -> UserMeResponse:
-    token = cred.credentials
-    payload = decode_token(token)
-    user_id = payload.get("sub")
+    from app.core.settings import get_settings
+    from jose import jwt
+
+    settings = get_settings()
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return UserMeResponse(
+            status=401,
+            message="인증 실패",
+            data=None,
+        )
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
+        user_id = payload.get("sub", "")
+    except Exception:
+        return UserMeResponse(
+            status=401,
+            message="인증 실패",
+            data=None,
+        )
     service = UserService(UserRepository())
     return service.get_me(db, user_id)

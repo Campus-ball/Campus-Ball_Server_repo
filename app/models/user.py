@@ -14,7 +14,7 @@ class User(Base):
     phone_number = Column(String(20), nullable=False)
     gender = Column(String(10), nullable=False)
     role = Column(String(10), nullable=False, default="MEMBER")
-    club_id = Column(BigInteger, ForeignKey("club.club_id"), nullable=False)
+    club_id = Column(BigInteger, ForeignKey("club.club_id"), nullable=True)
 
     owned_clubs = relationship(
         "Club", back_populates="owner", foreign_keys="Club.owner_id"

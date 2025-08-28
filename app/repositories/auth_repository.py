@@ -29,6 +29,7 @@ class AuthRepository:
         if department is None:
             raise ValueError("Invalid departmentId")
 
+        # 1) 사용자 먼저 생성
         user = User(
             user_id=user_id,
             password_hash=password_hash,
@@ -37,13 +38,14 @@ class AuthRepository:
             phone_number=phone_number,
             gender=gender,
             role="OWNER",
-            club_id=0,  # 임시, 클럽 생성 후 업데이트
+            club_id=None,  # 클럽 생성 후 업데이트
         )
         db.add(user)
         db.flush()
 
+        # 2) 클럽 생성 (owner_id는 위에서 생성된 user_id)
         club = Club(
-            club_id=None,  # Auto-increment 가정; DB 측에서 할당된다면 None
+            club_id=None,  # Auto-increment 가정; DB에서 할당
             owner_id=user_id,
             name=club_name,
             description=club_description,
@@ -54,7 +56,6 @@ class AuthRepository:
         db.add(club)
         db.flush()
 
-        # 생성된 club_id를 사용자에 반영
-        user.club_id = club.club_id
-
+        # 3) 사용자에 생성된 club_id 연결
+        user.club_id = int(club.club_id)
         db.commit()
