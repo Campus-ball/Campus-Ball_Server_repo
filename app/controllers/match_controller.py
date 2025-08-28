@@ -11,6 +11,8 @@ from app.services.match_service import MatchService
 from app.dto.match.response.matchListResponse import MatchListResponse
 from app.dto.match.response.matchSuccessListResponse import MatchSuccessListResponse
 from app.dto.match.response.matchRandomResponse import MatchRandomResponse
+from app.dto.match.reqeust.matchRandomCreateRequest import MatchRandomCreateRequest
+from app.dto.match.response.matchRandomCreateResponse import MatchRandomCreateResponse
 from app.core.settings import get_settings
 from jose import jwt
 from app.dto.match.response.matchCreateResponse import MatchCreateResponse
@@ -113,3 +115,22 @@ def get_random_match(
         user_id = ""
     service = MatchService(MatchRepository())
     return service.random_opponent(db, user_id)
+
+
+@router.post("/random/request", response_model=MatchRandomCreateResponse)
+def create_random_request(
+    body: MatchRandomCreateRequest,
+    db: Session = Depends(get_db),
+    authorization: str = Header(default=""),
+) -> MatchRandomCreateResponse:
+    settings = get_settings()
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return MatchRandomCreateResponse(status=500, message="신청 실패", data=None)
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
+        user_id = payload.get("sub", "")
+    except Exception:
+        user_id = ""
+    service = MatchService(MatchRepository())
+    return service.random_request(db, user_id, body)

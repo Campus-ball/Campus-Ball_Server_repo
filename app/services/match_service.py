@@ -20,6 +20,11 @@ from app.dto.match.response.matchRandomResponse import (
     MatchRandomResponse,
     MatchRandomData,
 )
+from app.dto.match.reqeust.matchRandomCreateRequest import MatchRandomCreateRequest
+from app.dto.match.response.matchRandomCreateResponse import (
+    MatchRandomCreateResponse,
+    MatchRandomCreateData,
+)
 from app.models import Department
 
 
@@ -169,4 +174,21 @@ class MatchService:
                 startDate=slot_date or "",
                 startTime=slot_time or "",
             ),
+        )
+
+    def random_request(
+        self, db: Session, user_id: str, body: MatchRandomCreateRequest
+    ) -> MatchRandomCreateResponse:
+        request_id = self.repository.create_random_request(
+            db,
+            from_user_id=user_id,
+            target_club_id=int(body.clubId),
+            start_date=body.startDate,
+            start_time=body.startTime,
+        )
+        db.commit()
+        return MatchRandomCreateResponse(
+            status=200,
+            message="친선 경기 신청에 성공하였습니다!",
+            data=MatchRandomCreateData(requestId=int(request_id)),
         )
