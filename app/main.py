@@ -22,16 +22,15 @@ logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 
 app = FastAPI(title="CampusBall API", version="1.0")
 
+app.include_router(availability_controller.router)
+
 app.include_router(api_controller.router)
 app.include_router(auth_controller.router)
 app.include_router(event_controller.router)
 app.include_router(match_controller.router)
 app.include_router(club_controller.router)
 app.include_router(user_controller.router)
-app.include_router(availability_controller.router)
 
 settings = get_settings()
 os.makedirs(settings.files_dir, exist_ok=True)
 app.mount("/files", StaticFiles(directory=settings.files_dir), name="files")
-
- 

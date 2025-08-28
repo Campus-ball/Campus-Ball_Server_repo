@@ -7,7 +7,9 @@ from .base import Base
 class Request(Base):
     __tablename__ = "request"
 
-    request_id = Column(BigInteger, primary_key=True, nullable=False)
+    request_id = Column(
+        BigInteger, primary_key=True, autoincrement=True, nullable=False
+    )
     date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)

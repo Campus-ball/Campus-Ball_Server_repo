@@ -39,30 +39,44 @@ def reject_match(
 
 
 @router.get("/list", response_model=MatchListResponse)
-def list_received_matches(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchListResponse:
+def list_received_matches(
+    db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)
+) -> MatchListResponse:
     service = MatchService(MatchRepository())
     return service.list_received_requests(db, user_id)
 
 
 @router.get("/", response_model=MatchSuccessListResponse)
-def list_success_matches(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchSuccessListResponse:
+def list_success_matches(
+    db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)
+) -> MatchSuccessListResponse:
     service = MatchService(MatchRepository())
     return service.list_success_matches(db, user_id)
 
 
 @router.post("/request", response_model=MatchCreateResponse)
-def create_match_request(body: MatchCreateRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchCreateResponse:
+def create_match_request(
+    body: MatchCreateRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> MatchCreateResponse:
     service = MatchService(MatchRepository())
     return service.create_friendly_request(db, user_id, body)
 
 
-@router.get("/random", response_model=MatchRandomResponse)
-def get_random_match(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchRandomResponse:
+@router.post("/random", response_model=MatchRandomResponse)
+def get_random_match(
+    db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)
+) -> MatchRandomResponse:
     service = MatchService(MatchRepository())
     return service.random_opponent(db, user_id)
 
 
 @router.post("/random/request", response_model=MatchRandomCreateResponse)
-def create_random_request(body: MatchRandomCreateRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchRandomCreateResponse:
+def create_random_request(
+    body: MatchRandomCreateRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> MatchRandomCreateResponse:
     service = MatchService(MatchRepository())
     return service.random_request(db, user_id, body)
