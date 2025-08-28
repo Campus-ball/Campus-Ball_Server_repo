@@ -1,41 +1,17 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.deps import get_current_user_id
 from app.dto.user.response.userMeResponse import UserMeResponse
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 
 
-security = HTTPBearer(auto_error=True)
-router = APIRouter(prefix="/user", tags=["user"], dependencies=[Depends(security)])
+router = APIRouter(prefix="/user", tags=["user"]) 
 
 
 @router.get("/me", response_model=UserMeResponse)
-def get_me(
-    db: Session = Depends(get_db), authorization: str = Depends(lambda: ""),
-) -> UserMeResponse:
-    from app.core.settings import get_settings
-    from jose import jwt
-
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return UserMeResponse(
-            status=401,
-            message="인증 실패",
-            data=None,
-        )
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        return UserMeResponse(
-            status=401,
-            message="인증 실패",
-            data=None,
-        )
+def get_me(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> UserMeResponse:
     service = UserService(UserRepository())
     return service.get_me(db, user_id)

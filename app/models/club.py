@@ -13,7 +13,7 @@ class Club(Base):
     )
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=False)
-    logo_img_url = Column(String(255), nullable=True)
+    logo_img_url = Column(String(255), nullable=False, default="http://campus-ball-server.kro.kr:30080/files/fdfebbf223f64ff7bfc1d9d6f2e2c456.png")
     chat_url = Column(String(255), nullable=True)
     member_count = Column(Integer, nullable=False, default=11)
     department_id = Column(
