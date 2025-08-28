@@ -12,3 +12,4 @@ from .enums import (
     Gender as Gender,
     CalendarEventType as CalendarEventType,
 )
+from .revoked_token import RevokedToken as RevokedToken
