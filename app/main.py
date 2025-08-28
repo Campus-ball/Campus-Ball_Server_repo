@@ -3,7 +3,9 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
 import logging
-from app.controllers import api_controller, auth_controller
+from app.controllers import api_controller
+from app.controllers import auth_controller
+from app.controllers import availability_controller
 from app.controllers import event_controller
 from app.controllers import match_controller
 from app.controllers import club_controller
@@ -26,6 +28,7 @@ app.include_router(event_controller.router)
 app.include_router(match_controller.router)
 app.include_router(club_controller.router)
 app.include_router(user_controller.router)
+app.include_router(availability_controller.router)
 
 settings = get_settings()
 os.makedirs(settings.files_dir, exist_ok=True)
