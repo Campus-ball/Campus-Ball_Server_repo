@@ -17,17 +17,11 @@ from app.services.availability_service import AvailabilityService
 router = APIRouter(prefix="/availability", tags=["availability"]) 
 
 
-@router.post("/", response_model=CreateAvailabilityResponse)
+@router.post("", response_model=CreateAvailabilityResponse)
 def create_availability(
     req: CreateAvailabilityRequest = None,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> CreateAvailabilityResponse:
-    # AvailabilityService expects token; we adapt by passing through
-    # For minimal change, reconstruct a pseudo token flow is not needed; change service signature instead in future.
-    from app.core.security import create_access_token
-
     service = AvailabilityService(AvailabilityRepository(), UserRepository())
-    # Temporary: service.create expects token. Issue short-lived token for user_id.
-    token = create_access_token(user_id)
-    return service.create(db, token, req)
+    return service.create(db, user_id, req)

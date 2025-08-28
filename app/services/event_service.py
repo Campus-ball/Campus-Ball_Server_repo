@@ -19,7 +19,7 @@ class EventService:
     def list_events_for_user(self, db: Session, user_id: str) -> EventListResponse:
         user, club = self.repository.find_user_and_club(db, user_id)
         if user is None or club is None:
-            return EventListResponse(status=200, message="캘린더 이벤트를 성공적으로 가져왔습니다.", data=EventListData(items=[]))
+            return EventListResponse(status=404, message="엔티티가 존재하지 않습니다.", data=EventListData(items=[]))
 
         # Determine college via department
         department = db.query(Department).filter(Department.department_id == club.department_id).first()
@@ -38,8 +38,8 @@ class EventService:
                         title=ev.title,
                         startDate=ev.start_date.isoformat(),
                         endDate=ev.end_date.isoformat(),
-                        startTime="00:00",
-                        endTime="00:00",
+                        startTime=ev.start_time.strftime("%H:%M"),
+                        endTime=ev.end_time.strftime("%H:%M"),
                     )
                 )
 

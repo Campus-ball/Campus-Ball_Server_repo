@@ -44,7 +44,7 @@ def list_received_matches(db: Session = Depends(get_db), user_id: str = Depends(
     return service.list_received_requests(db, user_id)
 
 
-@router.get("/", response_model=MatchSuccessListResponse)
+@router.get("", response_model=MatchSuccessListResponse)
 def list_success_matches(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchSuccessListResponse:
     service = MatchService(MatchRepository())
     return service.list_success_matches(db, user_id)

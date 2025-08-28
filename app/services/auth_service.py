@@ -48,8 +48,13 @@ class AuthService:
                 club_logo_url=req.clubLogoUrl,
                 chat_url=req.chatUrl,
             )
+            db.commit()
             return SignUpClubLeaderResponse(status=200, message="회원가입 성공", data=None)
         except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             return SignUpClubLeaderResponse(status=500, message=f"회원가입 실패: {e}", data=None)
 
     def login(self, db: Session, req: LoginRequest) -> LoginResponse:

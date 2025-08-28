@@ -25,7 +25,7 @@ class EventRepository:
         return (
             db.query(Availability)
             .filter(Availability.club_id == club_id)
-            .order_by(Availability.start_date.asc(), Availability.availability_id.asc())
+            .order_by(Availability.start_date.asc(), Availability.start_time.asc())
             .all()
         )
 
