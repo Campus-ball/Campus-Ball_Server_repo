@@ -2,6 +2,7 @@ from typing import Optional, Tuple, List
 from datetime import date, time
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.models import Request, Club, Match, User, Department, Availability
 
@@ -136,12 +137,12 @@ class MatchRepository:
         self, db: Session, exclude_club_id: int
     ) -> List[Tuple[Club, int]]:
         sub = (
-            db.query(Match.club_id, db.func.count(Match.match_id).label("cnt"))
+            db.query(Match.club_id, func.count(Match.match_id).label("cnt"))
             .group_by(Match.club_id)
             .subquery()
         )
         rows = (
-            db.query(Club, db.func.coalesce(sub.c.cnt, 0))
+            db.query(Club, func.coalesce(sub.c.cnt, 0))
             .outerjoin(sub, sub.c.club_id == Club.club_id)
             .filter(Club.club_id != exclude_club_id)
             .order_by(sub.c.cnt.asc().nullsfirst(), Club.club_id.asc())
