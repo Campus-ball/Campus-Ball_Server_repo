@@ -165,3 +165,40 @@ class MatchRepository:
             .all()
         )
         return rows
+
+    def find_my_availabilities(self, db: Session, club_id: int) -> List[Availability]:
+        """현재 클럽의 가용시간 조회"""
+        return (
+            db.query(Availability)
+            .filter(Availability.club_id == club_id)
+            .order_by(Availability.start_date.asc(), Availability.start_time.asc())
+            .all()
+        )
+
+    def find_clubs_with_matching_availability(
+        self,
+        db: Session,
+        exclude_club_id: int,
+        target_date: date,
+        target_start_time: time,
+        target_end_time: time,
+    ) -> List[Tuple[Club, Availability, int]]:
+        """같은 날짜에 가용시간이 있는 다른 클럽들 찾기 (경기 수 포함)"""
+        # 경기 수 서브쿼리
+        match_sub = (
+            db.query(Match.club_id, func.count(Match.match_id).label("cnt"))
+            .group_by(Match.club_id)
+            .subquery()
+        )
+
+        rows = (
+            db.query(Club, Availability, func.coalesce(match_sub.c.cnt, 0))
+            .join(Availability, Availability.club_id == Club.club_id)
+            .outerjoin(match_sub, match_sub.c.club_id == Club.club_id)
+            .filter(
+                Club.club_id != exclude_club_id, Availability.start_date == target_date
+            )
+            .order_by(match_sub.c.cnt.asc().nullsfirst(), Club.club_id.asc())
+            .all()
+        )
+        return rows

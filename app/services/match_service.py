@@ -128,51 +128,61 @@ class MatchService:
             return MatchRandomResponse(
                 status=500, message="동아리 가져오기 실패", data=None
             )
-        # Two-join strategy: 후보 수집
-        by_match = self.repository.find_candidate_clubs_by_match(db, club.club_id)
-        by_avail = self.repository.find_candidate_slots_by_availability(
-            db, club.club_id
-        )
 
-        # club_id -> earliest availability
-        avail_map = {}
-        for c, a in by_avail:
-            if c.club_id not in avail_map:
-                avail_map[c.club_id] = a
+        # 1. 현재 클럽의 가용시간 조회
+        my_availabilities = self.repository.find_my_availabilities(db, club.club_id)
+        if not my_availabilities:
+            return MatchRandomResponse(
+                status=500,
+                message="등록된 가용시간이 없습니다. 먼저 가용시간을 등록해주세요.",
+                data=None,
+            )
 
-        # 점수화: 최근 경기 수가 적은 순, 가장 이른 슬롯 우선, tie-breaker club_id
+        # 2. 각 가용시간별로 매칭 가능한 상대 찾기
         candidates = []
-        for c, cnt in by_match:
-            a = avail_map.get(c.club_id)
-            if a is None:
-                continue
-            date_key = a.start_date.isoformat() if a.start_date else "9999-12-31"
-            time_key = a.start_time.strftime("%H:%M") if a.start_time else "23:59"
-            candidates.append((cnt or 0, date_key, time_key, int(c.club_id), c, a))
+        for my_avail in my_availabilities:
+            # 같은 날짜에 가용시간이 있는 다른 클럽들 찾기
+            matching_clubs = self.repository.find_clubs_with_matching_availability(
+                db,
+                club.club_id,
+                my_avail.start_date,
+                my_avail.start_time,
+                my_avail.end_time,
+            )
+
+            for candidate_club, candidate_avail, match_count in matching_clubs:
+                # 시간 겹침 검사
+                if self._time_overlaps(my_avail, candidate_avail):
+                    candidates.append(
+                        {
+                            "club": candidate_club,
+                            "availability": candidate_avail,
+                            "my_availability": my_avail,
+                            "match_count": match_count or 0,
+                        }
+                    )
 
         if not candidates:
             return MatchRandomResponse(
                 status=500,
-                message="매칭된 상대를 찾지 못했습니다.",
+                message="매칭 가능한 상대를 찾지 못했습니다. 다른 날짜의 가용시간을 등록해보세요.",
                 data=None,
             )
 
-        # Top-K -> 소프트맥스 가중 랜덤 선택으로 다양성 확보
+        # 3. 점수화 및 선택
         from math import exp
         import random
 
-        candidates.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+        # 점수: 최근 경기 수가 적을수록 높게 (-cnt)
+        def score(candidate):
+            return -float(candidate["match_count"])
+
+        # Top-K 선택
+        candidates.sort(key=lambda x: score(x))
         top_k = candidates[: min(5, len(candidates))]
 
-        # 점수: 최근 경기 수가 적을수록 높게 (-cnt), 더 이른 슬롯에 작은 패널티
-        def score(item):
-            cnt, d, t, _cid, _c, _a = item
-            # 날짜/시간 패널티(가벼운 영향)
-            date_penalty = 0.0 if d == "" else 0.001
-            time_penalty = 0.0 if t == "" else 0.001
-            return -float(cnt) - date_penalty - time_penalty
-
-        tau = 0.6  # temperature: 낮을수록 상위 편향, 높을수록 다양성↑
+        # 소프트맥스 가중 랜덤 선택
+        tau = 0.6  # temperature
         scores = [score(it) for it in top_k]
         exps = [exp(s / tau) for s in scores]
         ssum = sum(exps) or 1.0
@@ -187,46 +197,62 @@ class MatchService:
                 chosen = it
                 break
 
-        _cnt, _d, _t, _cid, candidate, a = chosen
-        slot_date = a.start_date.isoformat() if a.start_date else ""
-        slot_time = a.start_time.strftime("%H:%M") if a.start_time else ""
-        if candidate is None:
-            return MatchRandomResponse(
-                status=500,
-                message="매칭된 상대를 찾지 못했습니다.",
-                data=None,
-            )
+        candidate_club = chosen["club"]
+        candidate_avail = chosen["availability"]
+
+        # 4. 응답 데이터 구성
+        slot_date = (
+            candidate_avail.start_date.isoformat() if candidate_avail.start_date else ""
+        )
+        slot_time = (
+            candidate_avail.start_time.strftime("%H:%M")
+            if candidate_avail.start_time
+            else ""
+        )
+
         # 관계 사용(직접 쿼리 대신)
-        dept = candidate.department
+        dept = candidate_club.department
         dept_name = (
             f"{dept.college.name} {dept.name}"
             if dept and getattr(dept, "college", None)
             else ""
         )
+
         return MatchRandomResponse(
             status=200,
             message="매칭된 상대방 정보를 성공적으로 가져왔습니다.",
             data=MatchRandomData(
-                clubId=int(candidate.club_id),
-                clubName=candidate.name,
+                clubId=int(candidate_club.club_id),
+                clubName=candidate_club.name,
                 departmentName=dept_name,
-                clubLogoUrl=candidate.logo_img_url,
-                clubDescription=candidate.description,
+                clubLogoUrl=candidate_club.logo_img_url,
+                clubDescription=candidate_club.description,
                 startDate=slot_date or "",
                 startTime=slot_time or "",
             ),
         )
+
+    def _time_overlaps(self, avail1, avail2) -> bool:
+        """두 가용시간이 겹치는지 확인"""
+        if (
+            avail1.start_time <= avail2.end_time
+            and avail2.start_time <= avail1.end_time
+        ):
+            return True
+        return False
 
     def random_request(
         self, db: Session, user_id: str, body: MatchRandomCreateRequest
     ) -> MatchRandomCreateResponse:
         # startTime으로부터 1시간 뒤를 endTime으로 자동 계산
         from datetime import datetime, timedelta
-        
+
         start_time = datetime.strptime(body.startTime, "%H:%M").time()
-        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
+        end_time = (
+            datetime.combine(datetime.today(), start_time) + timedelta(hours=1)
+        ).time()
         end_time_str = end_time.strftime("%H:%M")
-        
+
         request_id = self.repository.create_random_request(
             db,
             from_user_id=user_id,
