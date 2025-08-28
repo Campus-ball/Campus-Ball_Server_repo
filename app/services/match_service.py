@@ -220,12 +220,20 @@ class MatchService:
     def random_request(
         self, db: Session, user_id: str, body: MatchRandomCreateRequest
     ) -> MatchRandomCreateResponse:
+        # startTime으로부터 1시간 뒤를 endTime으로 자동 계산
+        from datetime import datetime, timedelta
+        
+        start_time = datetime.strptime(body.startTime, "%H:%M").time()
+        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
+        end_time_str = end_time.strftime("%H:%M")
+        
         request_id = self.repository.create_random_request(
             db,
             from_user_id=user_id,
             target_club_id=int(body.clubId),
             start_date=body.startDate,
             start_time=body.startTime,
+            end_time=end_time_str,
         )
         db.commit()
         return MatchRandomCreateResponse(
