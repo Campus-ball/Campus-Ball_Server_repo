@@ -10,6 +10,8 @@ from app.dto.api.response.clubListResponse import ClubListResponse
 from app.dto.api.response.nicknameCheckResponse import NicknameCheckResponse
 from app.dto.api.response.imageUploadResponse import ImageUploadResponse
 from app.services.api_service import ApiService
+from app.services.club_service import ClubService
+from app.repositories.club_repository import ClubRepository
 from app.dto.api.response.userIdCheckResponse import UserIdCheckResponse
 
 
@@ -28,10 +30,10 @@ def list_colleges(db: Session = Depends(get_db)) -> CollegeListResponse:
     return service.list_colleges(db)
 
 
-@router.get("/club/list", response_model=ClubListResponse)
-def list_clubs(db: Session = Depends(get_db)) -> ClubListResponse:
-    service = ApiService()
-    return service.list_clubs(db)
+@router.get("/club/{department_id}/list", response_model=ClubListResponse)
+def list_clubs(department_id: int, db: Session = Depends(get_db)) -> ClubListResponse:
+    service = ClubService(ClubRepository())
+    return service.list_clubs_by_department(db, department_id)
 
 
 @router.get("/nickname/check", response_model=NicknameCheckResponse)

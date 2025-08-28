@@ -32,6 +32,17 @@ class ClubService:
             data=ClubListData(items=items),
         )
 
+    def list_clubs_by_department(self, db: Session, department_id: int) -> ClubListResponse:
+        clubs = self.repository.list_by_department(db, department_id)
+        items: List[ClubItem] = [
+            ClubItem(clubId=int(club.club_id), clubName=club.name) for club in clubs
+        ]
+        return ClubListResponse(
+            status=200,
+            message="동아리 조회 성공",
+            data=ClubListData(items=items),
+        )
+
     def get_club_info(self, db: Session, my_user_id: str, opponent_club_id: int) -> ClubInfoResponse:
         user, my_club = self.repository.find_user_and_club(db, my_user_id)
         opponent, opp_dept = self.repository.get_opponent_with_department(db, opponent_club_id)

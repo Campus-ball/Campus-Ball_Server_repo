@@ -48,3 +48,11 @@ class ClubRepository:
     def list_all(self, db: Session) -> List[Club]:
         return db.query(Club).order_by(Club.club_id.asc()).all()
 
+    def list_by_department(self, db: Session, department_id: int) -> List[Club]:
+        return (
+            db.query(Club)
+            .filter(Club.department_id == department_id)
+            .order_by(Club.club_id.asc())
+            .all()
+        )
+
