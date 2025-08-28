@@ -21,18 +21,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-# MongoDB (for Document DB)
-if settings.mongo_database_url:
-    mongo_client = MongoClient(settings.mongo_database_url)
-    mongo_db = mongo_client[settings.mongo_db_name] if settings.mongo_db_name else None
-else:
-    mongo_client = None
-    mongo_db = None
-# You can define your MongoDB database and collections here
-mongo_db = mongo_client[settings.MONGO_DB_NAME]
-
-
-def get_mongo_db():
-    return mongo_db

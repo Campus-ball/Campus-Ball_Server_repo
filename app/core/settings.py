@@ -1,7 +1,8 @@
 from functools import lru_cache
 from typing import List, Optional
+import json
 
-from pydantic import AnyUrl, Field, field_validator
+from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,15 +33,11 @@ class Settings(BaseSettings):
         default=60 * 24 * 14, alias="REFRESH_TOKEN_EXPIRE_MINUTES"
     )
 
-    # CORS
-    cors_origins: List[str] = Field(default_factory=list, alias="CORS_ORIGINS")
+    # CORS (avoid List[str] field binding directly from env to prevent JSON decode issues)
+    cors_origins_env: Optional[str] = Field(default=None, alias="CORS_ORIGINS")
 
     # Locale
     timezone: str = Field(default="Asia/Seoul", alias="TZ")
-
-    # Optional MongoDB
-    mongo_database_url: Optional[str] = Field(default=None, alias="MONGO_DATABASE_URL")
-    mongo_db_name: Optional[str] = Field(default=None, alias="MONGO_DB_NAME")
 
     # File uploads
     files_dir: str = Field(default="/data/files", alias="FILES_DIR")
@@ -59,19 +56,23 @@ class Settings(BaseSettings):
             "DATABASE_URL or SQLALCHEMY_DATABASE_URL must be set in environment"
         )
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _parse_cors_origins(cls, value):
-        if value is None:
+    def parse_cors_origins(self) -> List[str]:
+        raw = self.cors_origins_env
+        if raw is None:
             return []
-        if isinstance(value, list):
-            return value
-        if isinstance(value, str):
-            s = value.strip()
-            if s in ("*", ""):
-                return ["*"]
-            return [item.strip() for item in s.split(",") if item.strip()]
-        return value
+        s = raw.strip()
+        if s == "" or s == "[]":
+            return []
+        if s == "*":
+            return ["*"]
+        if s.startswith("["):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return [str(x) for x in parsed]
+            except Exception:
+                return []
+        return [item.strip() for item in s.split(",") if item.strip()]
 
 
 @lru_cache(maxsize=1)

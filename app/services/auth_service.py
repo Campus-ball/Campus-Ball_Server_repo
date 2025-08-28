@@ -17,7 +17,6 @@ from app.core.security import (
     decode_token,
     create_access_token,
 )
-from app.repositories.token_repository import TokenRepository
 from app.repositories.auth_repository import AuthRepository
 
 
@@ -25,10 +24,8 @@ class AuthService:
     def __init__(
         self,
         repository: AuthRepository,
-        token_repository: TokenRepository | None = None,
     ):
         self.repository = repository
-        self.token_repository = token_repository or TokenRepository()
 
     def signup_club_leader(
         self, db: Session, req: SignUpClubLeaderRequest
@@ -77,10 +74,6 @@ class AuthService:
         payload = decode_token(req.refreshToken)
         if payload.get("type") != "refresh":
             raise ValueError("Invalid token type")
-        jti = payload.get("jti")
-        if jti and self.token_repository.is_revoked(jti):
-            raise ValueError("Token revoked")
-        # NOTE: No persistence check per ERD policy
         sub = payload.get("sub")
         access = create_access_token(sub)
         return RefreshTokenResponse(
@@ -91,10 +84,5 @@ class AuthService:
 
     def logout(self, db: Session, token: str) -> None:
         payload = decode_token(token)
-        jti = payload.get("jti")
-        exp = payload.get("exp")
-        if jti and exp:
-            # exp는 epoch seconds
-            expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
-            self.token_repository.revoke(jti, expires_at)
-            # NOTE: No stored token to delete per ERD policy
+        # Stateless JWT: no server-side revocation without storage
+        return None
