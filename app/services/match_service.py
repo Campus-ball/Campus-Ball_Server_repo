@@ -25,7 +25,6 @@ from app.dto.match.response.matchRandomCreateResponse import (
     MatchRandomCreateResponse,
     MatchRandomCreateData,
 )
-from app.models import Department
 
 
 class MatchService:
@@ -129,39 +128,81 @@ class MatchService:
             return MatchRandomResponse(
                 status=500, message="동아리 가져오기 실패", data=None
             )
-        # Two-join strategy
+        # Two-join strategy: 후보 수집
         by_match = self.repository.find_candidate_clubs_by_match(db, club.club_id)
         by_avail = self.repository.find_candidate_slots_by_availability(
             db, club.club_id
         )
-        # Choose first club that appears in availability list
-        # 나중에 알고리즘 적용할 부분
-        candidate = None
-        slot_date = None
-        slot_time = None
+
+        # club_id -> earliest availability
         avail_map = {}
         for c, a in by_avail:
             if c.club_id not in avail_map:
                 avail_map[c.club_id] = a
-        for c, _cnt in by_match:
+
+        # 점수화: 최근 경기 수가 적은 순, 가장 이른 슬롯 우선, tie-breaker club_id
+        candidates = []
+        for c, cnt in by_match:
             a = avail_map.get(c.club_id)
-            if a is not None:
-                candidate = c
-                slot_date = a.start_date.isoformat() if a.start_date else ""
-                slot_time = a.start_time.strftime("%H:%M") if a.start_time else ""
+            if a is None:
+                continue
+            date_key = a.start_date.isoformat() if a.start_date else "9999-12-31"
+            time_key = a.start_time.strftime("%H:%M") if a.start_time else "23:59"
+            candidates.append((cnt or 0, date_key, time_key, int(c.club_id), c, a))
+
+        if not candidates:
+            return MatchRandomResponse(
+                status=500,
+                message="매칭된 상대를 찾지 못했습니다.",
+                data=None,
+            )
+
+        # Top-K -> 소프트맥스 가중 랜덤 선택으로 다양성 확보
+        from math import exp
+        import random
+
+        candidates.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+        top_k = candidates[: min(5, len(candidates))]
+
+        # 점수: 최근 경기 수가 적을수록 높게 (-cnt), 더 이른 슬롯에 작은 패널티
+        def score(item):
+            cnt, d, t, _cid, _c, _a = item
+            # 날짜/시간 패널티(가벼운 영향)
+            date_penalty = 0.0 if d == "" else 0.001
+            time_penalty = 0.0 if t == "" else 0.001
+            return -float(cnt) - date_penalty - time_penalty
+
+        tau = 0.6  # temperature: 낮을수록 상위 편향, 높을수록 다양성↑
+        scores = [score(it) for it in top_k]
+        exps = [exp(s / tau) for s in scores]
+        ssum = sum(exps) or 1.0
+        probs = [v / ssum for v in exps]
+
+        r = random.random()
+        acc = 0.0
+        chosen = top_k[0]
+        for it, p in zip(top_k, probs):
+            acc += p
+            if r <= acc:
+                chosen = it
                 break
+
+        _cnt, _d, _t, _cid, candidate, a = chosen
+        slot_date = a.start_date.isoformat() if a.start_date else ""
+        slot_time = a.start_time.strftime("%H:%M") if a.start_time else ""
         if candidate is None:
             return MatchRandomResponse(
                 status=500,
                 message="매칭된 상대를 찾지 못했습니다.",
                 data=None,
             )
-        dept = (
-            db.query(Department)
-            .filter(Department.department_id == candidate.department_id)
-            .first()
+        # 관계 사용(직접 쿼리 대신)
+        dept = candidate.department
+        dept_name = (
+            f"{dept.college.name} {dept.name}"
+            if dept and getattr(dept, "college", None)
+            else ""
         )
-        dept_name = f"{dept.college.name} {dept.name}" if dept and dept.college else ""
         return MatchRandomResponse(
             status=200,
             message="매칭된 상대방 정보를 성공적으로 가져왔습니다.",
