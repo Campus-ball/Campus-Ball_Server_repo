@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Header
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -18,7 +19,8 @@ from jose import jwt
 from app.dto.match.response.matchCreateResponse import MatchCreateResponse
 
 
-router = APIRouter(prefix="/match", tags=["match"])
+security = HTTPBearer(auto_error=True)
+router = APIRouter(prefix="/match", tags=["match"], dependencies=[Depends(security)])
 
 
 @router.post("/accept", response_model=MatchAcceptResponse)

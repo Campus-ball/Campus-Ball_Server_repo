@@ -14,8 +14,10 @@ from app.repositories.user_repository import UserRepository
 from app.services.availability_service import AvailabilityService
 
 
-router = APIRouter(prefix="/availability", tags=["availability"])
 security = HTTPBearer(auto_error=True)
+router = APIRouter(
+    prefix="/availability", tags=["availability"], dependencies=[Depends(security)]
+)
 
 
 @router.post("/", response_model=CreateAvailabilityResponse)
