@@ -7,9 +7,9 @@ from .base import Base
 class Club(Base):
     __tablename__ = "club"
 
-    club_id = Column(BigInteger, primary_key=True, nullable=False)
+    club_id = Column(BigInteger, primary_key=True, nullable=False, autoincrement=True)
     owner_id = Column(
-        String(20), ForeignKey("user.user_id"), primary_key=True, nullable=False
+        String(20), ForeignKey("user.user_id"), nullable=False
     )
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=False)
