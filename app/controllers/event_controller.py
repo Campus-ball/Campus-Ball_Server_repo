@@ -9,10 +9,10 @@ from app.core.settings import get_settings
 from jose import jwt
 
 
-router = APIRouter(prefix="/api", tags=["event"])
+router = APIRouter(prefix="/event", tags=["event"])
 
 
-@router.get("/event/list", response_model=EventListResponse)
+@router.get("/list", response_model=EventListResponse)
 def list_events(
     db: Session = Depends(get_db), authorization: str = Header(default="")
 ) -> EventListResponse:
