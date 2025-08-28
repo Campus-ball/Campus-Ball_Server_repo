@@ -99,6 +99,37 @@ class MatchRepository:
             owner_id2=to_club.owner_id,
         )
         db.add(req)
+        db.flush()
+        return int(req.request_id)
+
+    def create_random_request(
+        self,
+        db: Session,
+        from_user_id: str,
+        target_club_id: int,
+        start_date: str,
+        start_time: str,
+    ) -> int:
+        user = db.query(User).filter(User.user_id == from_user_id).first()
+        if user is None:
+            raise ValueError("User not found")
+        from_club = db.query(Club).filter(Club.club_id == user.club_id).first()
+        to_club = db.query(Club).filter(Club.club_id == target_club_id).first()
+        if from_club is None or to_club is None:
+            raise ValueError("Club not found")
+        req = Request(
+            date=start_date,
+            start_time=start_time,
+            end_time=start_time,
+            type="랜덤 매칭 요청",
+            club_id=from_club.club_id,
+            owner_id=from_club.owner_id,
+            club_id2=to_club.club_id,
+            owner_id2=to_club.owner_id,
+        )
+        db.add(req)
+        db.flush()
+        return int(req.request_id)
 
     # Club + Match join: find clubs with fewer recent matches (example heuristic)
     def find_candidate_clubs_by_match(
