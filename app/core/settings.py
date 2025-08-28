@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     mongo_database_url: Optional[str] = Field(default=None, alias="MONGO_DATABASE_URL")
     mongo_db_name: Optional[str] = Field(default=None, alias="MONGO_DB_NAME")
 
+    # File uploads
+    files_dir: str = Field(default="/data/files", alias="FILES_DIR")
+    files_base_url: str = Field(default="http://campus-ball-server.kro.kr:30080/files", alias="FILES_BASE_URL")
+
     # Compatibility accessor
     @property
     def resolved_database_url(self) -> str:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.models import College
 
 
-class CollegeRepository:
+class CollageRepository:
     def list_all(self, db: Session) -> List[College]:
         return db.query(College).order_by(College.college_id.asc()).all()
 
