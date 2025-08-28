@@ -18,7 +18,7 @@ router = APIRouter(prefix="/availability", tags=["availability"])
 security = HTTPBearer(auto_error=True)
 
 
-@router.post("", response_model=CreateAvailabilityResponse)
+@router.post("/", response_model=CreateAvailabilityResponse)
 def create_availability(
     cred: HTTPAuthorizationCredentials = Depends(security),
     req: CreateAvailabilityRequest = None,
