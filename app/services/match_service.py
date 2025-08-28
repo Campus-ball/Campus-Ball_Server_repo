@@ -77,7 +77,7 @@ class MatchService:
                 requestType=req.type,
                 clubId=int(c.club_id),
                 clubName=c.name,
-                departmentName=f"{dept.college.name} {dept.name}",
+                departmentName=f"{dept.name}",
                 clubLogoUrl=c.logo_img_url,
             )
             for (req, c, dept) in rows
@@ -217,7 +217,7 @@ class MatchService:
         # 관계 사용(직접 쿼리 대신)
         dept = candidate_club.department
         dept_name = (
-            f"{dept.college.name} {dept.name}"
+            f"{dept.name}"
             if dept and getattr(dept, "college", None)
             else ""
         )
