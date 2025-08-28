@@ -38,8 +38,8 @@ class EventService:
                         title=ev.title,
                         startDate=ev.start_date.isoformat(),
                         endDate=ev.end_date.isoformat(),
-                        startTime=ev.start_time.strftime("%H:%M"),
-                        endTime=ev.end_time.strftime("%H:%M"),
+                        startTime="00:00",  # Academic events don't have time, use default
+                        endTime="23:59",    # Academic events don't have time, use default
                     )
                 )
 
