@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -14,8 +14,7 @@ from app.dto.match.response.matchSuccessListResponse import MatchSuccessListResp
 from app.dto.match.response.matchRandomResponse import MatchRandomResponse
 from app.dto.match.reqeust.matchRandomCreateRequest import MatchRandomCreateRequest
 from app.dto.match.response.matchRandomCreateResponse import MatchRandomCreateResponse
-from app.core.settings import get_settings
-from jose import jwt
+from app.core.deps import get_current_user_id
 from app.dto.match.response.matchCreateResponse import MatchCreateResponse
 
 
@@ -40,99 +39,30 @@ def reject_match(
 
 
 @router.get("/list", response_model=MatchListResponse)
-def list_received_matches(
-    db: Session = Depends(get_db), authorization: str = Header(default="")
-) -> MatchListResponse:
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return MatchListResponse(
-            status=500,
-            message="받은 신청 목록을 가져오는데 실패했습니다.",
-            data={"items": []},
-        )
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        user_id = ""
+def list_received_matches(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchListResponse:
     service = MatchService(MatchRepository())
     return service.list_received_requests(db, user_id)
 
 
 @router.get("/", response_model=MatchSuccessListResponse)
-def list_success_matches(
-    db: Session = Depends(get_db), authorization: str = Header(default="")
-) -> MatchSuccessListResponse:
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return MatchSuccessListResponse(
-            status=500,
-            message="성사된 경기 목록을 가져오는데 실패했습니다.",
-            data={"items": []},
-        )
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        user_id = ""
+def list_success_matches(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchSuccessListResponse:
     service = MatchService(MatchRepository())
     return service.list_success_matches(db, user_id)
 
 
 @router.post("/request", response_model=MatchCreateResponse)
-def create_match_request(
-    body: MatchCreateRequest,
-    db: Session = Depends(get_db),
-    authorization: str = Header(default=""),
-) -> MatchCreateResponse:
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return MatchCreateResponse(
-            status=500, message="신청에 실패했습니다.", data=None
-        )
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        user_id = ""
+def create_match_request(body: MatchCreateRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchCreateResponse:
     service = MatchService(MatchRepository())
     return service.create_friendly_request(db, user_id, body)
 
 
 @router.get("/random", response_model=MatchRandomResponse)
-def get_random_match(
-    db: Session = Depends(get_db), authorization: str = Header(default="")
-) -> MatchRandomResponse:
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return MatchRandomResponse(status=500, message="매칭 실패", data=None)
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        user_id = ""
+def get_random_match(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchRandomResponse:
     service = MatchService(MatchRepository())
     return service.random_opponent(db, user_id)
 
 
 @router.post("/random/request", response_model=MatchRandomCreateResponse)
-def create_random_request(
-    body: MatchRandomCreateRequest,
-    db: Session = Depends(get_db),
-    authorization: str = Header(default=""),
-) -> MatchRandomCreateResponse:
-    settings = get_settings()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return MatchRandomCreateResponse(status=500, message="신청 실패", data=None)
-    token = authorization.split(" ", 1)[1]
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_alg])
-        user_id = payload.get("sub", "")
-    except Exception:
-        user_id = ""
+def create_random_request(body: MatchRandomCreateRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> MatchRandomCreateResponse:
     service = MatchService(MatchRepository())
     return service.random_request(db, user_id, body)

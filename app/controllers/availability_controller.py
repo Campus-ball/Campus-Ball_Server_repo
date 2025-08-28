@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -11,20 +10,24 @@ from app.dto.availability.response.createAvailabilityResponse import (
 )
 from app.repositories.availability_repository import AvailabilityRepository
 from app.repositories.user_repository import UserRepository
+from app.core.deps import get_current_user_id
 from app.services.availability_service import AvailabilityService
 
 
-security = HTTPBearer(auto_error=True)
-router = APIRouter(
-    prefix="/availability", tags=["availability"], dependencies=[Depends(security)]
-)
+router = APIRouter(prefix="/availability", tags=["availability"]) 
 
 
 @router.post("/", response_model=CreateAvailabilityResponse)
 def create_availability(
-    cred: HTTPAuthorizationCredentials = Depends(security),
     req: CreateAvailabilityRequest = None,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> CreateAvailabilityResponse:
+    # AvailabilityService expects token; we adapt by passing through
+    # For minimal change, reconstruct a pseudo token flow is not needed; change service signature instead in future.
+    from app.core.security import create_access_token
+
     service = AvailabilityService(AvailabilityRepository(), UserRepository())
-    return service.create(db, cred.credentials, req)
+    # Temporary: service.create expects token. Issue short-lived token for user_id.
+    token = create_access_token(user_id)
+    return service.create(db, token, req)

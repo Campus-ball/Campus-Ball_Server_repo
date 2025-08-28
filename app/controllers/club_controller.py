@@ -1,31 +1,17 @@
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.settings import get_settings
+from app.core.deps import get_current_user_id
 from app.dto.club.request.clubInfoResponse import ClubInfoResponse
 from app.repositories.club_repository import ClubRepository
 from app.services.club_service import ClubService
-from jose import jwt
 
 
 router = APIRouter(prefix="/club", tags=["club"])
 
 
 @router.get("/{club_id}", response_model=ClubInfoResponse)
-def get_club_info(
-    club_id: int, db: Session = Depends(get_db), authorization: str = Header(default="")
-) -> ClubInfoResponse:
-    settings = get_settings()
-    user_id = ""
-    if authorization and authorization.lower().startswith("bearer "):
-        token = authorization.split(" ", 1)[1]
-        try:
-            payload = jwt.decode(
-                token, settings.secret_key, algorithms=[settings.jwt_alg]
-            )
-            user_id = payload.get("sub", "")
-        except Exception:
-            user_id = ""
+def get_club_info(club_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> ClubInfoResponse:
     service = ClubService(ClubRepository())
     return service.get_club_info(db, my_user_id=user_id, opponent_club_id=club_id)
