@@ -111,6 +111,7 @@ class MatchRepository:
         target_club_id: int,
         start_date: str,
         start_time: str,
+        end_time: str,
     ) -> int:
         user = db.query(User).filter(User.user_id == from_user_id).first()
         if user is None:
@@ -123,7 +124,7 @@ class MatchRepository:
             request_id=None,
             date=start_date,
             start_time=start_time,
-            end_time=start_time,
+            end_time=end_time,
             type="랜덤 매칭 요청",
             club_id=from_club.club_id,
             owner_id=from_club.owner_id,
