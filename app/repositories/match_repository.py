@@ -148,7 +148,7 @@ class MatchRepository:
             db.query(Club, func.coalesce(sub.c.cnt, 0))
             .outerjoin(sub, sub.c.club_id == Club.club_id)
             .filter(Club.club_id != exclude_club_id)
-            .order_by(sub.c.cnt.asc().nullsfirst(), Club.club_id.asc())
+            .order_by(func.coalesce(sub.c.cnt, 0).asc(), Club.club_id.asc())
             .all()
         )
         return rows
@@ -198,7 +198,7 @@ class MatchRepository:
             .filter(
                 Club.club_id != exclude_club_id, Availability.start_date == target_date
             )
-            .order_by(match_sub.c.cnt.asc().nullsfirst(), Club.club_id.asc())
+            .order_by(func.coalesce(match_sub.c.cnt, 0).asc(), Club.club_id.asc())
             .all()
         )
         return rows
